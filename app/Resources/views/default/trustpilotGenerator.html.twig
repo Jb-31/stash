@@ -1,0 +1,103 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+    <div class="box box-primary">
+        <div class="container">
+            <h1>Trustpilot link generator</h1>
+
+            <form>
+                <div class="row">
+                    <div class="col-md-8 col-offset-md-2">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <input type="nom" id="nom" class="form-control" placeholder="nom ...">
+
+                            </div>
+                            <div class="col-md-3">
+                                <input type="prenom" id="prenom" class="form-control" placeholder="prenom ...">
+                            </div>
+                            <div class="col-md-6 ">
+                                <div class="input-group">
+                                    <input type="email" id="email" class="form-control"
+                                           placeholder="Email pour trustpilot ...">
+
+                              <span class="input-group-btn">
+                                <button id="submit_btn" class="btn btn-default" type="button">Go!</button>
+                              </span>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+
+                        <div class="row">
+
+                        </div>
+                        <!-- /input-group -->
+                        <div id="result" class="bs-callout bs-collout-info hidden">
+                            <label>Lien trust pilot :</label>
+
+                            <div class="input-group">
+
+                                <input type="text" id="tp_link" class="form-control"/>
+                              <span class="input-group-btn">
+                                <button class="btn btn-primary clipboardBtn " data-clipboard-target="#tp_link"
+                                        title="copier" type="button"><i class="glyphicon glyphicon-copy"></i></button>
+                              </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="spacer"></div>
+    </div>
+    <div class="spacer"></div>
+{% endblock %}
+
+
+    {% block javascripts %}
+        {{ parent() }}
+        <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+        <script type="text/javascript">
+            $('document').ready(function () {
+                console.log('ready');
+                var clipboard = new ClipboardJS('.clipboardBtn');
+                clipboard.on('success', function (e) {
+                    console.info('Action:', e.action);
+                    console.info('Text:', e.text);
+                    console.info('Trigger:', e.trigger);
+
+                    e.clearSelection();
+                });
+                $('form').submit(function (e) {
+                    e.preventDefault();
+                    generateTPLINK();
+                });
+                $('#submit_btn').click(function (e) {
+                    e.preventDefault();
+                    generateTPLINK();
+                });
+            });
+
+            function generateTPLINK() {
+                var url = '{{ path('generate_tp_link') }}';
+                $.post(url, {
+                            nom: $('#nom').val(),
+                            prenom: $('#prenom').val(),
+                            email: $('#email').val()
+                        }, function (data) {
+                            $('#result').removeClass('hidden');
+                            $('#tp_link').val(data.tp_link);
+                        }
+                );
+            }
+
+        </script>
+    {% endblock %}
+{% block stylesheets %}
+    {{ parent() }}
+    <style >
+        .spacer{
+            padding: 20px;
+        }
+    </style>
+{% endblock %}

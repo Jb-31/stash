@@ -1,0 +1,188 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container" class="container-fluid">
+            <div class="row">
+                <div class="col-md-10 col-md-offset-1">
+                    <nav class="navbar">
+                        <a href="{{ path('ticket_home') }}"  class="btn btn-sm btn-default "> Retour Home GRC </a>
+
+                    </nav>
+                    <div class="bs-callout bs-callout-default">
+                        <h4>Informations utilisateur</h4>
+
+                        <table id="userView" class="table ">
+                            <tr>
+                                <td class="bold"> #id</td>
+                                <td>{{ userInfos.user.id }}</td>
+                            </tr>
+                            <tr>
+                                <td class="bold" >Email</td>
+                                <td>{{ userInfos.user.email}}</td>
+                            </tr>
+                            <tr>
+                                <td class="bold" >Téléphone</td>
+                                <td>{{ userInfos.user.phoneNumber|default('-')}}</td>
+                            </tr>
+                            <tr>
+                                <td class="bold" >Date inscription</td>
+                                <td>{{ userInfos.user.created_at.date|date('d/m/Y H:i:s')}}</td>
+                            </tr>
+                            <tr>
+                                <td class="bold" >Désabonné ?</td>
+                                <td>{{ userInfos.user.cancelled|boolean|raw }}</td>
+                            </tr>
+                            {% if userInfos.user.cancelled %}
+                            <tr>
+                                <td class="bold" >Date désabo</td>
+                                <td>{{ userInfos.user.cancelled_at.date|date('d/m/Y H:i:s') }}</td>
+                            </tr>
+                            {% endif %}
+
+                            <tr>
+                                <td class="bold" >Compte gelé ?</td>
+                                <td>{{ userInfos.user.isFrozen|boolean|raw}}</td>
+                            </tr>
+                            {% if userInfos.user.cancelled == 0 %}
+                            <tr>
+                                <td class="bold"> Outils</td>
+                                <td>
+                                    <a href="{{ path('grc_api_user_unsuscribe',{'user': userInfos.user.id|b64, 'ticket': ticket.id|b64 }) }}" class="btn btn-warning action-button">Désabonner</a>
+                                    <a class="refresh_button btn btn-default"> <i class="glyphicon glyphicon-refresh"></i> Raffraichir la page</a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    <div class="bs-callout bs-callout-default">
+                        <h4>Souscriptions </h4>
+                    {% for sub in userInfos.user.subscriptions %}
+                        <div class="bs-callout {% if sub.isActive %}bs-callout-success {% else %} bs-callout-default {% endif %}">
+                            <table class="table ">
+                                <tr>
+                                    <th>id</th>
+                                    <th>creation</th>
+                                    <th>fin trial</th>
+                                    <th>etape de renouvellement</th>
+                                    <th>active ?</th>
+                                    <th>expiration</th>
+                                    <th>désabonné ?</th>
+                                    <th>étape de relance</th>
+                                    <th>plan</th>
+                                    <th>Outils</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ sub.id }}</td>
+                                    <td>{{ sub.createdAt.date|date('d/m/Y H:i:s') }}</td>
+                                    <td>{{ sub.trialEndAt.date|date('d/m/Y H:i:s') }}</td>
+                                    <td>{{ sub.stepRenewal }}</td>
+                                    <td>{{ sub.isActive|boolean|raw  }}</td>
+                                    <td>{{ sub.expiresAt.date|date('d/m/Y H:i:s') }}</td>
+                                    <td>{% if sub.cancelledAt is not null %}{{ sub.cancelledAt.date|date('d/m/Y H:i:s') }}{% else %} {{ 0|boolean|raw }} {% endif %}</td>
+                                    <td>{{ sub.stepRetry }}</td>
+                                    <td>{{ sub.plan_desc }}</td>
+                                    <td><a  href="{{ path('grc_api_sub_message',{'sub': sub.id|b64, 'ticket': ticket.id|b64}) }}" class="btn btn-info ajax-action template_email"><i class="glyphicon glyphicon-comment"></i> modèle email</a>
+                                       <br> <br><a class="refresh_button btn btn-sm btn-default"> <i class="glyphicon glyphicon-refresh"></i> Raffraichir la page</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <h4> transactions liées <a class="refresh_button btn btn-sm btn-default"> <i class="glyphicon glyphicon-refresh"></i> Raffraichir la page</a></h4>
+                            <div class="bs-callout bs-callout-default">
+                                <table class="table ">
+                                    <tr>
+                                        <th>id</th>
+                                        <th>création</th>
+                                        <th>montant</th>
+                                        <th>remboursé</th>
+                                        <th>status hipay</th>
+                                        <th>etape</th>
+                                        <th>categorie</th>
+                                        <th>Outils</th>
+                                    </tr>
+                                    {% for tr in  sub.transactions %}
+                                        <tr class="{% if tr.refunded_amount != 0 %} warning {% else %} {%  if tr.hipay_status == 'Captured' %} success {% endif %} {% if tr.hipay_status == 'Authorization Refused' or tr.hipay_status == 'Refused' %} danger {% endif %}{% endif %}">
+                                            <td>{{ tr.id }}</td>
+                                            <td>{{ tr.created_at.date|date('d/m/Y H:i:s') }}</td>
+                                            <td>{{ tr.amount|amount }}€</td>
+                                            <td>{{ tr.refunded_amount|amount }}€</td>
+                                            <td>{{ tr.hipay_status }}</td>
+                                            <td>{{ tr.step }}</td>
+                                            <td>{{ tr.transactionCategory|transactionCategory|raw }}</td>
+                                            <td> {% if tr.refunded_amount == 0 and tr.hipay_status == 'Captured' or tr.hipay_status == 'Authorized'  %}<a href="{{ path('grc_api_tr_refund',{'ticket': ticket.id|b64, 'transaction': tr.id|b64,'amount': tr.amount }) }}" class="btn btn-warning btn-sm action-button"> Rembourser</a> {% endif %} </td>
+                                        </tr>
+                                    {% endfor %}
+                                 </table>
+                            </div>
+                        </div>
+                    {% endfor %}
+                        <nav class="navbar">
+                            <a href="{{ path('ticket_home') }}" class="btn btn-sm btn-default"> Retour Home GRC </a>
+                            <a class="refresh_button btn btn-sm btn-default"> <i class="glyphicon glyphicon-refresh"></i> Raffraichir la page</a>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modal_message" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Service Client</h4>
+                </div>
+                <div id="text-rbt" class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default clipboardBtn" data-clipboard-target="#text-rbt">copier</button>
+                    <button type="button" class="btn btn-default " data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+    <script type="text/javascript">
+        $('document').ready(function(){
+            $('.action-button').click(function(e){
+                e.stopPropagation();
+                var url = $(this).attr('href');
+                $.ajax(url);
+                window.location.reload();
+                return false;
+            });
+
+            $('.template_email').click(function(e){
+                e.stopPropagation();
+                var url = $(this).attr('href');
+                $.ajax(url).done(function(data)
+                {
+                    var html = data.html;
+                    $('#text-rbt').html(html);
+                    $('#modal_message').modal();
+                });
+
+                return false;
+            });
+
+            var clipboard = new ClipboardJS('.clipboardBtn');
+            clipboard.on('success', function (e) {
+                console.info('Action:', e.action);
+                console.info('Text:', e.text);
+                console.info('Trigger:', e.trigger);
+
+                e.clearSelection();
+            });
+
+            $('.refresh_button').click(function(){
+                window.location.reload();
+            });
+        });
+    </script>
+
+{% endblock %}

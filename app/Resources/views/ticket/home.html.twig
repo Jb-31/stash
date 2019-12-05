@@ -1,0 +1,154 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <div class="col-md-8 col-md-offset-2">
+                <h2>Gestion Demande Client</h2>
+
+                <div class="col-md-8  col-md-offset-2">
+                    <form method="post">
+                        <div class="bs-callout bs-callout-info">
+                            <h4> Demande client reçue depuis :</h4>
+                            <select id="demand_from" class="form-control" name="demand_from">
+                                {% for from in demand_from %}
+                                    <option value="{{ from }}">{{ loop.index }}. {{ from }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <h4> Site concerné</h4>
+                            <select id="et_plateform" class="form-control" name="eternity_platform">
+                                {% for et in eternity_list %}
+                                    <option value="{{ et.id }}">{{ loop.index }}. {{ et.name }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <div class="row">
+                                <div class="col-sm-5">
+                                    <h4>Email utilisé</h4>
+                                    <input type="text" name="email" class="form-control" placeholder="email@gmail.fr"
+                                           value="{{ ticket.email }}">
+                                </div>
+                                <div class="col-sm-2">
+                                    <h4>Ou</h4>
+                                </div>
+                                <div class="col-sm-5">
+                                    <h4>4 derniers chiffres CB</h4>
+                                    <input type="text" name="pan" class="form-control" placeholder="1234" maxlength="4"
+                                           value="{{ ticket.cbLastNumbers }}">
+                                </div>
+                            </div>
+                            <h4>Commentaires</h4>
+                            <textarea name="comments" class="form-control"
+                                      placeholder="commentaires">{{ ticket.comments }}</textarea>
+                            <br>
+                            <input type="hidden" name="ticket" value="{{ ticket.id }}" />
+                            <div class="text-center">
+                                <input type="submit" class="btn btn-info " value="Rechercher">
+                            </div>
+                        </div>
+
+
+                    </form>
+                </div>
+            </div>
+            {% if results is not null %}
+                {#{{ dump(results) }}#}
+                {#{{ dump(ticket) }}#}
+                <div class="col-md-8 col-md-offset-2">
+                    <div class="bs-callout bs-callout-info">
+                        <h4>Resultats</h4>
+                        {% if ticket.email is not null and ticket.email != '' %}
+                            <h5> Utilisateurs </h5>
+                            {% if results.users|length > 0 %}
+                                <table class="table">
+                                    <tr>
+                                        <th>#Id</th>
+                                        <th>Email</th>
+                                        <th>Création du compte</th>
+                                        <th>Encore actif ?</th>
+                                        <th>Désabonné ?</th>
+                                        <th>Date du désabo</th>
+                                        <th>outils</th>
+                                    </tr>
+                                    {% for u in results.users %}
+                                        <tr class="{% if u.isCancelled == 0 %} success {% endif %}">
+                                            <td>{{ u.id }}</td>
+                                            <td>{{ u.email }}</td>
+                                            <td>{{ u.created_at.date|date('d/m/Y H:i:s') }}</td>
+                                            <td>{% if u.isActive %} oui {% else %}  non {% endif %}</td>
+                                            <td>{% if u.isCancelled %} oui {% else %}  non {% endif %}</td>
+                                            <td>{% if u.isCancelled %}{{ u.CancelledAt.date|date('d/m/Y H:i:s') }} {% else %} - {% endif %}</td>
+                                            <td><a href="{{ path('grc_api_user_details',{'id64': u.id|b64,'ticketId64': ticket.id|b64}) }}" class="btn btn-default btn-sm"
+                                                   title="Voir la fiche utilisateur"><i
+                                                            class="glyphicon glyphicon-user"></i> </a></td>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                            {% else %}
+                                <div class="bs-callout bs-callout-warning">
+                                    <p>Aucun utilisateur n'a été trouvé avec "{{ ticket.email }}" dans son email.</p>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        {% if ticket.cbLastNumbers is not null and ticket.cbLastNumbers != '' %}
+                            <h5> CB </h5>
+                            {% if results.cards|length > 0 %}
+                                <table class="table table-striped">
+                                    <tr>
+                                        <th>#Id</th>
+                                        <th>#Id User</th>
+                                        <th>Pan</th>
+                                        <th>expiration</th>
+                                        <th>Type</th>
+                                        <th>Banque</th>
+                                        <th>outils</th>
+                                    </tr>
+                                    {% for c in results.cards %}
+                                        <tr>
+                                            <td>{{ c.id }}</td>
+                                            <td>{{ c.userId }}</td>
+                                            <td>{{ c.pan }}</td>
+                                            <td>{{ c.exp_month }} / {{ c.exp_year }}</td>
+                                            <td>{{ c.brand }}</td>
+                                            <td>{{ c.issuer }}</td>
+                                            <td><a href="{{ path('grc_api_user_details',{'id64': c.userId|b64,'ticketId64': ticket.id|b64 }) }}" class="btn btn-default btn-sm"
+                                                   title="Voir la fiche utilisateur"><i
+                                                            class="glyphicon glyphicon-user"></i> </a></td>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                            {% else %}
+
+                                <div class="bs-callout bs-callout-warning">
+                                    <p>Aucune Carte n'a été trouvée</p>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script type="text/javascript">
+        $('document').ready(function () {
+            setPreviousValues();
+        });
+
+        function setPreviousValues() {
+            {% if ticket is not null and ticket.eternity is not null  %}
+            $('#et_plateform').val({{ ticket.eternity.id }});
+            $('#demand_from').val('{{ ticket.source }}');
+            {% endif %}
+        }
+    </script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+{% endblock %}
