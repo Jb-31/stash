@@ -30,7 +30,7 @@
         "symfony/monolog-bundle": "^3.0.2",
         "symfony/polyfill-apcu": "^1.0",
         "symfony/swiftmailer-bundle": "^2.3",
-        "symfony/symfony": "3.2.13",
+        "symfony/symfony": "3.4.26",
         "twig/twig": "*",
         "friendsofsymfony/user-bundle": "2.0",
         "sonata-project/admin-bundle": "^3.23",
