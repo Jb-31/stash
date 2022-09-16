@@ -12,7 +12,7 @@
     "grunt-sync-pkg": "^0.1.2",
     "matchdep": "~0.1.2",
     "jquery": "1.12.4",
-    "bootstrap": "3.3.7",
+    "bootstrap": "3.4.1",
     "lt-ie-9": "0.1.0"
   },
   "repository": {
